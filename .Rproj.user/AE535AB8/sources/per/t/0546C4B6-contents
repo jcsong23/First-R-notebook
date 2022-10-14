@@ -1,0 +1,28 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# install packages
+```{r}
+#install.packages("tidyverse",dependencies = TRUE)
+#install.packages("ggthemes",dependencies = TRUE)
+
+```
+
+# load packages
+```{r}
+library(tidyverse)
+library(ggthemes)
+```
+
+# import data
+```{r}
+exp1 = read_csv("exp1.csv")
+
+nrow(exp1)
+ncol(exp1)
+colnames(exp1)
+hist(exp1$rt)
+```
+

@@ -27,17 +27,27 @@ hist(exp1$rt)
 ```
 # tidyverse verbs
 ```{r}
+
 condition_data = exp1 %>% 
   select(subject, rt, typeoftrial, trialcondition, correct) %>%
   filter(typeoftrial=="picture" &
            trialcondition %in%
            c("Heavy_Normal","Light_Smashed","Heavy_Smashed","Light_Normal"))
+
+condition_data = condition_data %>%
+  separate(trialcondition, into = c("weight", "shape"), sep = "_")
+
+
 means = condition_data %>%
-  group_by(trialcondition) %>%
+  group_by(weight, shape) %>%
   summarise(mean_rt = mean(rt),
     sd_rt = sd(rt),
     mean_acc = mean(correct))
 
+means %>%
+  ggplot(aes(x = shape, y = sd_rt, fill = weight)) +
+  geom_col(position = "dodge") +
+  labs(x = "Shape", y = "RT", title = "Barplot of RT")
 ```
 # exercise
 ```{r}
@@ -61,13 +71,10 @@ condition_data %>%
   ylab("Count") +
   ggtitle("Histogram of RT")
 
-means %>%
-  ggplot(aes(x = trialcondition, y = mean_rt)) +
-  geom_bar(stat = "identity", fill = "pink", color = "gold") +
-  theme_fivethirtyeight() + 
-  xlab("RT (in milliseconds)") +
-  ylab("Count") +
-  ggtitle ("Barplot of RT")
+condition_data %>%
+  group_by(subject, trialcondition) %>%
+  count()
+
 ```
 # class exercises
 ```{r}
@@ -93,5 +100,43 @@ mean_ID = df %>%
 #nrow(mean_ID) would tell you how many rows there are, do in console
 #df %>% count() or nrow(df)
 
+df %>%
+group_by(ID, pathlength) %>% 
+  count()
+
+mean_condition = df %>%
+  group_by(Type, pathlength)%>%
+  summarise(mean_rt = mean(RT))
+
+mean_condition %>%
+  ggplot(aes(x = pathlength, y = mean_rt)) +
+  aes(fill = Type) +
+  geom_col(position = "dodge") +
+  theme_few() + 
+  xlab("Path length") +
+  ylab("Mean RT") +
+  ggtitle ("Barplot of Mean RT")
+
 ```
+```{r}
+df = df %>%
+  mutate(RT_seconds == RT/1000, accuracy = ifelse(pathlength==1 & Type == "Related", 1, 0))
+
+df = df %>%
+  mutate(pathlength = as.factor(pathlength), 
+         Type = as.factor(Type))
+
+df %>% pull (Type)
+df %>% pull (RT)
+
+levels (df %>% pull (pathlength))
+#answers how may levels does the variable pathlength have?
+#can only see if you do mutate and make it a factor
+
+df %>% pull (ID) %>% unique()
+unique(c(1,3,3,4,5,5,1,2))
+#omits all repetitions
+
+```
+# pull
 

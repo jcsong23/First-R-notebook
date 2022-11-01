@@ -15,6 +15,8 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 library(ggthemes)
+library(rstatix)
+library(ggpubr)
 ```
 
 # import data
@@ -272,7 +274,52 @@ t.test(subject_wide_new2$Light_Normal, subject_wide_new2$Heavy_Normal,
        var.equal = TRUE, paired = TRUE)
   # also no difference because p > 0.05 even after excluding outliers
 ```
+# back to long data
+```{r}
+subject_long = subject_wide %>%
+  select(-c(diff, diff2)) %>%
+  pivot_longer(names_to = "condition", cols = Heavy_Normal:Light_Smashed)
 
+new_means = means %>%
+  select(weight, shape, mean_rt)
+
+new_means_wide = new_means %>%
+  pivot_wider(names_from = c(weight, shape), values_from = mean_rt)
+
+new_means_long = new_means_wide %>%
+  pivot_longer(names_to = "condition", cols = Heavy_Normal:Light_Smashed)
+
+new_means_long = new_means_long %>%
+  separate(condition, into = c("weight","shape")) %>%
+  rename(mean_rt = value)
+```
+# ANOVA one-way
+```{r}
+data("iris")
+View(iris)
+
+levels(iris$Species)
+
+iris %>%
+  ggplot(aes(x = Species, y = Petal.Length)) + geom_boxplot()
+#there is a difference so can do t test individually - would be 3
+
+iris %>%
+  group_by(Species) %>%
+  identify_outliers(Petal.Length)
+
+iris %>% 
+  group_by(Species) %>%
+  shapiro_test(Petal.Length)
+
+ggqqplot(iris, "Petal.Length", facet.by = "Species")
+
+iris %>%
+  group_by(Species) %>%
+  summarise(sd = sd(Petal.Length), var = var(Petal.Length))
+
+iris %>% levene_test(Petal.Length ~ Species)
+```
 
 
 

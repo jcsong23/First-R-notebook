@@ -319,6 +319,52 @@ iris %>%
   summarise(sd = sd(Petal.Length), var = var(Petal.Length))
 
 iris %>% levene_test(Petal.Length ~ Species)
+
+# if all assumptions are met, this is a regular anova, but homogeneity was violated so:
+iris %>% anova_test(Petal.Length ~ Species)
+
+#so use welch test, corrects for different variances
+iris %>% welch_anova_test(Petal.Length ~ Species)
+# high F: difference between groups is higher than difference within groups
+# low p-value, so reject null; this values is really unlikely if between group variance was caused by chance. there is a between group difference
+
+#POST HOC test
+pwc = iris %>% tukey_hsd(Petal.Length ~ Species)
+
+pwc2 <- iris %>% games_howell_test(Petal.Length ~ Species)
+
+```
+# ANOVA 2 way
+```{r}
+install.packages("datarium")
+
+data("jobsatisfaction", package = "datarium")
+View(jobsatisfaction)
+
+jobsatisfaction %>%
+  group_by(gender, education_level) %>%
+  summarise(mean = mean(score), 
+            sd = sd(score))
+
+jobsatisfaction %>% 
+  ggplot(aes(x = gender, y = score, color = education_level)) + 
+  geom_boxplot()
+
+# now check assumptions: outliers, normality, homogeneity
+
+jobsatisfaction %>%
+  group_by(gender, education_level) %>%
+  shapiro_test(score)
+  # p > 0.05, so high enough, yes distribution is significantly different
+
+jobsatisfaction %>%
+  levene_test(score ~ gender*education_level)
+  # satisfied based on dfs?
+
+jobsatisfaction %>%
+  anova_test(score ~ gender*education_level)
+
+
 ```
 
 

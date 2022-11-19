@@ -9,6 +9,7 @@ output: html_notebook
 #install.packages("ggthemes",dependencies = TRUE)
 #install.packages("rstatix", dependencies = TRUE)
 #install.packages("ggpubr", dependencies = TRUE)
+#install.packages("emmeans", dependencies = TRUE)
 ```
 
 # load packages
@@ -17,6 +18,7 @@ library(tidyverse)
 library(ggthemes)
 library(rstatix)
 library(ggpubr)
+library(emmeans)
 ```
 
 # import data
@@ -364,8 +366,100 @@ jobsatisfaction %>%
 jobsatisfaction %>%
   anova_test(score ~ gender*education_level)
 
+# find simple effects because we found significant effects
+model <-lm(score ~ gender * education_level, data = jobsatisfaction)
+# to get right degrees of freedom for anova test
+
+jobsatisfaction %>%
+  group_by(gender) %>%
+  anova_test(score ~ education_level, error = model)
+
+# use emmeans bc found simple effects:
+jobsatisfaction %>%
+  group_by(gender) %>%
+  emmeans_test(score ~ education_level, p.adjust.method = "bonferroni")
+
+# what about a non-significant interaction? then we evaluate the main effects and see which produced significant. then you decompose main effects
+# only for 2 levels for independent variables
+jobsatisfaction %>%
+  pairwise_t_test(score ~ education_level, p.adjust.method = "bonferroni")
 
 ```
+# repeated measures anova
+```{r}
+relatedness = read_csv("relatedness.csv")
+
+# levels of path length
+relatedness = relatedness %>%
+  mutate(pathlength = as.factor(pathlength))
+
+levels(relatedness$pathlength)
+# trials per participant
+relatedness %>%
+  group_by(ID) %>%
+  count()
+#trials per path length
+relatedness %>%
+  group_by(ID, pathlength) %>%
+  count()
+
+# Mean time taken to make relatness judgemets as a functino of type of judgment and path length
+mean_rt = relatedness %>%
+  group_by(Type, pathlength) %>%
+  summarise(rt = mean(RT))
+#barplot
+mean_rt %>%
+  ggplot(aes(x = pathlength, y = rt, group = Type, fill = Type)) + 
+  geom_col(position = "dodge")+
+  theme_clean()+
+  scale_fill_wsj()
+
+
+subject_rt = relatedness %>%
+  group_by(ID, pathlength, Type) %>%
+  summarise(rt = mean(RT)) %>%
+  mutate(logRT = log(rt))
+
+# histogram
+hist(subject_rt$rt)
+hist(subject_rt$logRT)
+
+#check outliers
+outliers = subject_rt %>%
+  group_by(pathlength, Type) %>%
+  identify_outliers(logRT)
+#check normality
+
+subject_rt = subject_rt %>% ungroup()
+
+subject_rt %>%
+  group_by(pathlength, Type) %>%
+  shapiro_test(logRT)
+
+ggqqplot(subject_rt, "logRT", ggtheme = theme_bw()) +
+  facet_grid(pathlength ~ Type, labeller = "label_both")
+
+anova_test(data = subject_rt, dv = logRT, wid = ID, within = c(pathlength, Type))
+
+rm.aov = anova_test(
+  data = subject_rt, dv = logRT, wid = ID, within = c(pathlength, Type))
+
+get_anova_table(rm.aov) # there are significant interactions!
+
+#let's look at the effect of Type at each level of path length
+
+subject_rt %>%
+  group_by(Type) %>%
+  anova_test(dv = logRT, wid = ID, within = pathlength) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+# there are simple effects so need to look at pairwise t tests
+
+pwt = subject_rt %>%
+  group_by(Type) %>%
+  pairwise_t_test(logRT ~ pathlength, paired = TRUE, p.adjust.method = "bonferroni")
+```
+
 
 
 

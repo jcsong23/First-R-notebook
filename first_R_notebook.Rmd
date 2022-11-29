@@ -459,7 +459,59 @@ pwt = subject_rt %>%
   group_by(Type) %>%
   pairwise_t_test(logRT ~ pathlength, paired = TRUE, p.adjust.method = "bonferroni")
 ```
+# plot exercise
+```{r}
+install.packages("datarium")
 
+data("jobsatisfaction", package = "datarium")
+
+jobsatisfaction %>%
+  group_by(gender, education_level) %>%
+  ggplot(aes(x = education_level, y = score, group = gender, fill = gender)) + 
+  geom_col(position = "dodge")+
+  theme_clean()+
+  scale_fill_wsj()
+
+# sd error bars
+mean_scores = jobsatisfaction %>%
+  group_by(gender, education_level) %>%
+  summarise(mean = mean(score), 
+            sd = sd(score))
+
+mean_scores %>%
+  ggplot(aes(x = education_level, y = mean, group = gender, fill = gender)) + 
+  geom_col(position = "dodge")+
+  geom_errorbar(aes(ymin = mean-sd, 
+                ymax = mean+sd), width = .25, position = position_dodge(width = 0.9))+
+  theme_clean()+
+  scale_fill_wsj()
+
+# confidence intervals
+counts = jobsatisfaction %>%
+  group_by(gender, education_level) %>%
+  count()
+
+mean_scores = jobsatisfaction %>%
+  group_by(gender, education_level) %>%
+  summarise(mean = mean(score), 
+            sd = sd(score)) %>%
+  left_join(counts) %>%
+  mutate(SE = sd/n, ymin = mean - 1.96*SE,
+         ymax = mean + 1.96*SE)
+
+mean_scores %>%
+  ggplot(aes(x = education_level, y = mean, group = gender, fill = gender)) + 
+  geom_col(position = "dodge")+
+  geom_errorbar(aes(ymin = mean-sd, 
+                ymax = mean+sd), width = .25, position = position_dodge(width = 0.9))+
+  geom_point(data = jobsatisfaction, aes(x = education_level, y = score, group = gender),
+             position = position_jitterdodge(), alpha = 0.3)+
+  theme_clean()+
+  scale_fill_wsj()
+
+  
+
+```
 
 
 
